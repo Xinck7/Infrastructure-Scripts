@@ -1,0 +1,146 @@
+---
+- name: Check if Splunk already installed on linux
+  stat:
+    path: "/opt/splunkforwarder"
+  register: splunk_path_present_linux
+  when:
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: Install splunk rpm
+  command: rpm -i "<msi_URL>"
+  args:
+    warn: False
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: Install libselinux-python
+  yum:
+    name: libselinux-python
+    state: present
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: Start splunk
+  command: /opt/splunkforwarder/bin/splunk start --accept-license --no-prompt
+  ignore_errors: yes
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: create user-seed.conf for username and password for splunk
+  file:
+    path: /opt/splunkforwarder/etc/system/local/user-seed.conf
+    state: touch
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: populate user-seed.conf with username and password for splunk
+  blockinfile:
+    path: /opt/splunkforwarder/etc/system/local/user-seed.conf
+    block: |
+      [user_info]
+      USERNAME = "{{ ga_username }}"
+      PASSWORD = "{{ ga_password }}"
+    owner: root
+    group: root
+    mode: 0644
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: create deploymentclient.conf for deployment server for splunk
+  file:
+    path: /opt/splunkforwarder/etc/system/local/deploymentclient.conf
+    state: touch
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: populate deploymentclient.conf with username and password for splunk
+  blockinfile:
+    path: /opt/splunkforwarder/etc/system/local/deploymentclient.conf
+    block: |
+      [deployment-client]
+      
+      [target-broker:deploymentServer]
+      targetUri = <ip:port>
+    owner: root
+    group: root
+    mode: 0644
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: Stop splunk
+  command: /opt/splunkforwarder/bin/splunk stop
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: Start splunk
+  command: /opt/splunkforwarder/bin/splunk start
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: change ownership of splunk folders to root
+  command: chown -R root:root /opt/splunkforwarder/
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: Stop splunk
+  command: /opt/splunkforwarder/bin/splunk stop
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: Start splunk
+  command: /opt/splunkforwarder/bin/splunk start
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+
+- name: enable boot start for rhel 6.10
+  command: /opt/splunkforwarder/bin/splunk enable boot-start
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+    - ansible_facts['distribution_major_version'] == 6
+
+- name: enable boot start for rhel 7+
+  command: /opt/splunkforwarder/bin/splunk enable boot-start -systemd-managed 1 -user root
+  when:
+    - splunk_path_present_linux.stat.exists == false
+    - ansible_facts['distribution'] == "CentOS" or ansible_facts['distribution'] == "RedHat"
+    - ansible_facts['distribution_major_version'] == 7 or ansible_facts['distribution_major_version'] == 8
+
+###############
+
+# - name: Check if Splunk installed on windows
+#   win_service_info:
+#     name: splunkforwarder
+#   register: splunk_path_present_windows
+#   when:
+#     - ansible_facts['distribution'] == "Windows"
+
+# - name: Create Splunk directory for msi
+#   command: new-item "C:\application-setup\splunk\" -type directory
+#   when:
+#     - splunk_path_present_windows.stat.exists == false
+#     - ansible_facts['distribution'] == "Windows"
+
+# - name: Download Splunk msi
+#   command: $client = new-object system.net.webclient; $client.DownloadFile("<msiURL>")
+#   when:
+#     - splunk_path_present_windows.stat.exists == false
+#     - ansible_facts['distribution'] == "Windows"
+
+# - name: Install splunk
+#   command: msiexec /i "C:\application-setup\splunk\splunkforwarder-8.0.6-152fb4b2bb96-x64-release.msi" SPLUNKUSERNAME=admin SPLUNKPASSWORD={{ ga_password }} DEPLOYMENT_SERVER="<ip:port>" AGREETOLICENSE=Yes /quiet
+#   when:
+#     - splunk_path_present_windows.stat.exists == false
+#     - ansible_facts['distribution'] == "Windows"

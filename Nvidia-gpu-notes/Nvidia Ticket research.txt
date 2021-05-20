@@ -1,0 +1,208 @@
+Research the which letter version for the card
+for linux it needs to be Q
+https://docs.nvidia.com/grid/index.html
+https://docs.nvidia.com/grid/5.0/grid-vgpu-release-notes-vmware-vsphere/index.html
+
+Linux is type Q 
+
+Linux supported pass through 
+get the actual drivers and scp them on the VM
+
+associate on the configuration on the VM itself thorugh vcenter
+VNC is working 
+install and use console through VNC
+once you load the drivers you lose the web console
+
+Done:
+Type Q for the tesla m60's linux vm's
+VNC installed and connecting for after drivers installed
+Comaptible explicitly rhel 7.5 and centos 7.10 ish or something (6.9 good to go)
+    Need to reach out I guess to Greg Keller as well to see if 7.5 works beyond andrew mayhaps?
+    7.5 would be ideal without having to reinstall drivers on all systems just need to get for the 2
+
+/var/log/nvidia-installer.log
+
+
+######################
+#Actual config so far for centos
+#Type Q for the tesla m60's linux vm's use the type Q using 1gb of ram rather than all 8
+#VNC installed and connecting for after drivers installed
+yum groupinstall -y gnome desktop
+yum install -y vnc-server*
+yum install -y gcc
+vim /etc/sysconfig/vncservers
+vncpasswd
+#set password for vnc connection
+#test connection before installing drivers
+#scp the .run file to the server 
+#ensure init 3 running and desktop things are off
+#for centos was required on 384.155
+vi /etc/yum.repos.d/CentOS-Vault.repo
+enabled = 1 on 6.9 base (copy the base and change the 6.8 to 6.9 on both locations for that single entry set)
+yum install kernel-devel-<version>
+grubby --update-kernel=ALL --args="rd.driver.blacklist=nouveau nouveau.modeset=0"
+mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r).img.bak
+echo "blacklist nouveau" > /etc/modprobe.d/nouveau-blacklist.conf 
+dracut /boot/initramfs-$(uname -r).img $(uname -r)
+#Older driver
+/opt/video_card_drivers/NVIDIA-Linux-x86_64-384.155-grid.run #maybe needed   --kernel-source-path= #/usr/src/kernels/2.6.32-696.el6.x86_64/
+#with newer driver
+
+
+
+
+#For Rhel 7.5
+# yum groupinstall -y "Server with GUI"
+#systemctl set-default graphical.target
+#systemctl enable vncserver
+systemctl start graphical.target
+# yum install -y vnc-server*
+# yum install -y gcc
+# vim /etc/sysconfig/vncservers
+# vncpasswd
+# cp /lib/systemd/system/vncserver@.service /etc/systemd/system/vncserver@:3.service
+#systemctl daemon-reload
+systemctl start vncserver@:3.service
+systemctl enable vncserver@:3.service
+# vi /etc/gdm/custom.conf
+# WaylandEnable=false
+# grubby --update-kernel=ALL --args="rd.driver.blacklist=nouveau nouveau.modeset=0"
+# mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r).img.bak
+# echo "blacklist nouveau" > /etc/modprobe.d/nouveau-blacklist.conf 
+# dracut /boot/initramfs-$(uname -r).img $(uname -r)
+/opt/video_card_drivers/NVIDIA-Linux-x86_64-384.155-grid.run
+
+
+
+
+
+ls /usr/src/kernels/
+#If not there or not matching
+#yum --showduplicates list kernel-devel
+yum install kernel-devel-3.10.0-862.el7 
+
+
+#Rhel 7.4 (and 7.5?)
+yum update
+yum install gcc
+yum install kernel-devel
+yum groupinstall 'X Window System' 'KDE'
+yum install tigervnc
+yum install tigervnc-server
+cp /usr/lib/systemd/system/vncserver@.service /etc/systemd/system/vncserver@.service
+vi /etc/systemd/system/vncserver@.service
+useradd vnc
+grubby --update-kernel=ALL --args="rd.driver.blacklist=nouveau nouveau.modeset=0"
+mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r).img.bak
+echo "blacklist nouveau" > /etc/modprobe.d/nouveau-blacklist.conf 
+dracut /boot/initramfs-$(uname -r).img $(uname -r)
+
+reboot
+#https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-tigervnc
+#https://access.redhat.com/solutions/5238
+/opt/video_card_drivers/NVIDIA-Linux-x86_64-384.155-grid.run
+
+############################
+###Maybe options required###
+############################
+vi /etc/modprobe.d/50-nvidia.conf
+#add
+#options nvidia NVreg_DeviceFileUID=0 NVreg_DeviceFileGID=33 NVreg_DeviceFileMode=0666 NVreg_ModifyDeviceFiles=1
+vi /etc/gdm/custom.conf
+#add
+#WaylandEnable=false
+
+#Not really a thing but found in /var/log/messages
+#This is ultimately an issue with 7/4 vs 7.5
+#the 'fix'
+semanage fcontext -a -t 'console_device_t' 'nvidiactl'
+restorecon -v '/dev/nvidiactl'
+semanage fcontext -a -t 'console_device_t' 'nvidia0'
+restorecon -v '/dev/nvidia0'
+#allow it w/o the 'fix'
+ausearch -c 'gnome-session-c' --raw | audit2allow -M my-gnomesessionc
+semodule -i my-gnomesessionc.pp
+
+ausearch -c 'gnome-shell' --raw | audit2allow -M my-gnomeshell
+semodule -i my-gnomeshell.pp
+
+vi /etc/X11/Xsession.d/98-gnome-session-disable-acceleration-check
+case "$STARTUP" in
+     *gnome-session*)
+       STARTUP="$STARTUP --disable-acceleration-check"
+       ;;
+esac
+##########################################
+
+
+
+#########################
+TRIAL attempts
+#########################
+    #for centos 6.9 with nvidia driver specific route (didn't work as intended)
+    /opt/video_card_drivers/NVIDIA-Linux-x86_64-384.155-grid.run --kernel-source-path=/usr/src/kernels/2.6.32-696.el6.x86_64/
+###
+grubby --update-kernel=ALL --args="rd.driver.blacklist=nouveau nouveau.modeset=0"
+mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r).img.bak
+echo "blacklist nouveau" > /etc/modprobe.d/nouveau-blacklist.conf 
+dracut /boot/initramfs-$(uname -r).img $(uname -r)
+
+reboot
+#######################
+showing as
+yum install kernel-devel-<version> #for specific version of the vernel
+    rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+    yum install https://www.elrepo.org/elrepo-release-6.el6.elrepo.noarch.rpm
+
+    [10de:13f2]
+
+    yum install kmod-nvidia wants to upgrade to 
+    [x] kmod-nvidia-440.44-1.el6_10.elrepo
+    [x] kmod-nvidia-440.59-1.el6_10.elrepo
+    [x] kmod-nvidia-440.64-1.el6_10.elrepo
+    [x] kmod-nvidia-440.82-1.el6_10.elrepo
+    [x] kmod-nvidia-440.100-1.el6_10.elrepo
+    [x] kmod-nvidia-450.57-1.el6_10.elrepo 
+output showed as this from the 6.9 install
+[root@gstreamer-centos6-9 ~]# ls /usr/src/kernels/
+[root@gstreamer-centos6-9 ~]# cat /usr/include/
+
+after doing a "yum install -y kernel-devel"
+[root@gstreamer-centos6-9 ~]# ls /usr/src/kernels/2.6.32-754.31.1.el6.x86_64/
+arch/            .config          drivers/         fs/              init/            kernel/          Makefile         mm/              net/             scripts/         sound/           tools/           virt/
+block/           crypto/          firmware/        include/         ipc/             lib/             Makefile.common  Module.symvers   samples/         security/        System.map       usr/
+[root@gstreamer-centos6-9 ~]#
+this now exists
+##########
+
+
+on attempt 2
+tried just installing the repo 
+installed kmod-nvidia
+installed nvidia-x11-drv-32bit
+Xorg -configure and moved and set that up
+rebooted and ran with no luck
+nvidia-settings didn't open at all
+next had to 
+yum erase kmod-nvidia
+    which uninstalled all of it
+
+then ran the install
+
+Section "OutputClass"
+  Identifier "nvidia"
+  MatchDriver "nvidia-drm"
+  Driver "nvidia"
+  Option "AllowEmptyInitialConfiguration" "true"
+  Option "PrimaryGPU" "true"
+EndSection
+
+###############
+Ensure there wasn't any extra steps to be done with the driver with the whole disable thing
+
+Update for infrastructure scrum:
+was able to go through the process with the existing drivers and we can't do it with this driver set 
+Followed the instructions exactly with:
+default 6.9 (from centos repo vault)
+upgraded 6.9 kernel (final release)
+general purpose driver attempt from nvidia versus grid specific 

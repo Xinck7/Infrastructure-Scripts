@@ -1,0 +1,202 @@
+########################################
+
+Artifactory
+
+CLI to add the certificate because you can't do like nexus 'BEcAuSe nO LiCenSe'
+
+JAVA_HOME='/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.222.b10-0.el7_6.x86_64'
+
+CA_PATH=/etc/ssl/certs/aimes_root_ca_chain.pem
+
+keytool -importcert -alias startssl -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit -file $CA_PATH
+
+service artifactory restart
+
+service nginx restart
+
+Edit LDAP Settings
+
+Settings Name <domain>
+
+
+
+LDAP URL: ldaps://<domain controller>/
+
+Check: auto create artifactory users
+
+email attribute: mail
+
+Search filter: sAMAccountName={0}
+
+Search Base: <attribute editor DC= like path to users OU> | <2nd attribute editor DC= like path to users OU>
+
+check: Secure ldap search
+
+check: Search sub-tree
+
+ManagerDN: <attribute editor DC= like path to user to bind with>
+
+ManagerPassword: <bind password>
+
+Delete the LDAP connection settings
+
+Set settings for jenkins for using internal password
+
+Verify Login
+
+########################################
+
+Nexus
+
+<domain>
+
+Connection:
+
+import the aimes certificate 
+
+ldaps  :// <domain controller> : 636
+
+tick 'use nexus trustore' for the certificate
+
+<attribute editor DC= like path to users OU>
+
+simple authentication
+
+username: domain\<bind account username>
+
+password: <bind account password>
+
+User and Group
+
+User relative DN: blank
+
+object class: user
+
+user ID attribute: sAMAccountName
+
+real name attribute: cn
+
+email attribute: mail
+
+Map LDAP groups as roles: Checked
+
+Group type: Dynamic Groups
+
+Group member of attribute: memberOf
+
+
+AD-ServiceAccounts
+
+Connection:
+
+ldaps  :// <domain controller> : 636
+
+tick 'use nexus trustore' for the certificate
+
+<attribute editor DC= like path to users OU for service accounts>
+
+simple authentication
+
+username: <daomin>\<bind account username>
+
+password: <bind account password>
+
+User and Group
+
+User relative DN: blank
+
+object class: user
+
+user ID attribute: sAMAccountName
+
+real name attribute: cn
+
+email attribute: mail
+
+Map LDAP groups as roles: Checked
+
+Group type: Dynamic Groups
+
+Group member of attribute: memberOf
+
+Foreman*
+
+Need to run installer commands to trust the new CA cert properly (which trusts AD which required port 636 to authenticate - test failed on 389)
+
+LDAP Server
+
+Name: <domain name>
+
+Server: <domain controller>
+
+port: 636
+
+Server type: Active Directory
+
+Account
+
+username: domain\bind_username
+
+password: <Password>
+
+base DN: <attribute editor DC= like path to users OU>
+
+groups base dn: <CN= path to users OU>
+
+automatically create accounts in foreman: checked
+
+usergroup sync: checked
+
+attribute mappings
+
+Login name: sAMAccountName
+
+first name: givenName
+
+surname: sn
+
+email: mail
+
+Groups:
+
+relink the external group via the dropdown to the LDAP dayton instead of c389
+
+##################################
+
+Jenkins
+
+Ensure box has the aimes CA certificate installed to the trusted root store
+
+Ensure picture/capture of roles and permissions is updated.
+
+Manage Jenkins
+Manage Plugins (if not already installed):
+
+Active directory plugin
+
+Role-Based authorization
+
+Configure Global Security
+
+Access control: Active Directory
+
+Specify custom Active Directory name
+
+Domain name: <domain>
+
+Domain Controller: <domain controller> #when you hit save it will be updated with <domain controller>:3268
+
+Bind DN: <attribute editor full path to bind dn>
+
+
+Bind Pass: <bind password> 
+
+Advanced
+
+check: enable starttls
+
+group membership lookup strategy: automatic
+
+
+
+use jenkins internal database user: Admin #so it works if AD offline

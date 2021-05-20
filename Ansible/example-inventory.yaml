@@ -1,0 +1,19 @@
+all:
+  children:
+    group1:
+    group2:
+    group3:
+      hosts:
+        fqdn-1:
+    group4:
+      hosts:
+    group5:
+      hosts:
+        fqdn-2:
+    group6:
+      hosts:
+        fqdn-3:
+    group7:
+      hosts:
+  vars:
+    ansible_python_interpreter=/usr/bin/python3 
