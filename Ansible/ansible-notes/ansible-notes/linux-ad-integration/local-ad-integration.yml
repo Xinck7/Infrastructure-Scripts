@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  connection: local
+  become: true
+
+  vars_prompt: 
+    - name: join_user
+      prompt: "Enter Active Directory Username"
+      private: no
+
+    - name: join_pass
+      prompt: "Enter Active Directory Password"
+      confirm: yes
+
+  roles:
+    - linux.ad.integration

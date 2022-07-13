@@ -1,0 +1,5 @@
+---
+# vars file for log-shipping
+
+logs_to_collect:
+    - {name: "audit_logs", path: "/etc/audit/*"}

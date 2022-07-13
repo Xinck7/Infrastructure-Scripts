@@ -1,0 +1,49 @@
+---
+# tasks file for linux-ad-integration
+
+- name: Ensure mandatory variables are defined
+  assert:
+    that:
+      - "{{ item }} is defined"
+    fail_msg: Mandatory variable {{ item }} is not defined
+    quiet: true
+  loop:
+    - join_user
+    - join_pass
+    - domain
+
+- name: Ensure required packages are installed
+  yum:
+    state: present
+    name: "{{ ad_packages }}"
+
+- name: Test if we are joined to an Active Directory domain
+  command: realm list
+  register: realm_list
+  changed_when: false
+
+- name: Join Active Directory Domain ({{ domain }})
+  shell: echo {{ join_pass }} | realm join -U {{ join_user }} {{ domain }}
+  register: realm_join
+  when: realm_list.stdout == ""
+
+- name: Ensure SSSD is configured
+  template:
+    src: sssd.j2
+    dest: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: 0600
+  notify: 
+    - restart_sssd
+    - restart_autofs
+
+- name: Configure sudoers file
+  lineinfile:
+    path: /etc/sudoers.d/sudoers
+    regexp: '^%sudoers	ALL=(ALL)	ALL'
+    line: '%sudoers	ALL=(ALL)	ALL'
+    create: true
+    state: present
+
+

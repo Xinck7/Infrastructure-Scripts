@@ -1,0 +1,3 @@
+---
+- src: git+https://gitlab.domain.local/ansible/roles/linux.ad.integration.git
+  version: master

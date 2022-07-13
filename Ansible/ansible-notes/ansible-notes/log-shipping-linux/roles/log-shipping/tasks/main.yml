@@ -1,0 +1,41 @@
+---
+# tasks file for linux log shipping 
+
+# get date of running into overall collection
+  # can just call "{{ ansible_date_time.date }}"
+
+#ensure padlock path exists
+- name: Ensure padlock path exists
+  stat:
+    path: /run/*/media/Padlock3
+    register: apricorn_drive_present
+
+# Create folder path for log files
+- name: Create folder path for todays logs
+  file:
+    path: "{{ apricorn_drive_present.path }}/Audit_logs/{{ ansible_date_time.date }}" 
+    state:  directory
+    owner: root
+    group: root
+    mode: '0744'
+
+#remove originals if copied successfully(TM)
+- name: Remove original files
+  file:
+    path: "{{ logs_to_collect.path }}"
+    recurse: True
+    state: absent
+  with_items:
+    "{{ logs_to_collect }}"
+  when: files_copied.exists == True
+
+#gzip the files together #might be able to just loop through this aspect to accomplish in 1 task??
+- name: zip file to one for that date
+  archive:
+    path: "{{ logs_to_collect.path }}"
+    dest: "{{ apricorn_drive_present.path }}/Audit_logs/{{ ansible_date_time.date }}"
+  with_items:
+    "{{ logs_to_collect }}"
+#ensure only root/auditor permissions on .tgz
+
+

@@ -1,0 +1,35 @@
+# {{ ansible_managed }}
+
+[sssd]
+domains = {{ domain }}
+config_file_version = 2
+services = nss,pam,autofs
+
+[domain/{{ domain }}]
+ad_domain = {{ domain }}
+krb5_realm = {{ domain | upper }}
+id_provider = ad
+access_provider = ad
+ldap_id_mapping = false
+cache_credentials = true
+krb5_store_password_if_offline = true
+default_shell = /bin/bash
+fallback_homedir = /home/%u
+
+dyndns_update = true
+dyndns_update_ptr = true
+dyndns_refresh_interval = 43200
+
+ad_hostname = {{ ansible_hostname }}.{{ domain }}
+
+[autofs]
+autofs_provider = ad
+ldap_autofs_entry_key = cn 
+ldap_autofs_entry_object_class = nisObject
+ldap_autofs_entry_value = nisMapEntry
+ldap_autofs_map_name = nisMapName
+ldap_autofs_map_object_class = nisMap
+ldap_autofs_search_base = ou=automapper,dc=domain,dc=local
+
+[pam]
+offline_credential_expiration = 0

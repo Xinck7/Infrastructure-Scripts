@@ -1,0 +1,13 @@
+---
+# handlers file for linux log shipping 
+# - name: restart_sssd
+#   systemd:
+#     service: sssd
+#     state: restarted
+#     enabled: true
+
+# - name: restart_autofs
+#   systemd:
+#     service: autofs
+#     state: restarted
+#     enabled: true

@@ -1,0 +1,112 @@
+---
+- name: Schedule Weekly audit scripts then Collects Weekly log information
+  hosts: all
+  gather_facts: yes
+  become: yes
+  remote_user: <redacted>
+  vars:
+    files_to_collect:
+      - {src: /var/log/messages, dest: /ansible-collection/logs/}
+      - {src: /scripts/audits/weekly_report.txt, dest: /ansible-collection/weekly_reports/}
+    scripts:
+      - ansiblescripts/last8days
+      - ansiblescripts/SROandSRA_ThisWeek.sh
+      - ansiblescripts/excludefile.txt
+      - ansiblescripts/parse-log-files.sh
+  tasks:
+    
+    # Initial setup
+    - name: Ensure script location exists
+      file:
+        path: /scripts/audits/Archive
+        state: directory
+        recurse: yes
+
+    - name: Copies scripts over to remote host
+      copy:
+        src: "{{ item }}"
+        dest: /scripts
+        owner: root
+        group: root
+        mode: '0755'
+      with_items:
+        - "{{ scripts }}"
+      become: yes
+    
+    # Schedule weekly Virus scans
+    - name: Schedule virus scan weekly
+      cron: 
+        job: "{{ item.job }}"
+        minute: "{{ item.minute }}"
+        name: "{{ item.name }}"
+        hour: 20
+        day: 1
+        state: present
+      become: yes
+      with_items:
+        - {job: nohup /usr/local/bin/uvscan --version > /scripts/audits/Archive/uvscan.txt &, minute: 0, name: UVscan_version}
+        - {job: nohup /usr/local/bin/uvscan -rv --summary / --exclude excludefile.txt >> /scripts/audits/Archive/uvscan.txt &, minute: 1, name: UVscan}
+        - {job: /scripts/SROandSRA_ThisWeek.sh, minute: 10, name: SRO_SRA_weekly}
+        - {job: /scripts/parse-log-files.sh, minute: 50, name: parse}
+    
+    # Check if audit and parsing scripts have already run
+    - name: Check if weekly audit report exists
+      stat:
+        path: /scripts/audits/Archive/Weekly_SROs.txt
+      become: yes
+      register: audit_file_present
+    
+    - name: Check if weekly parsing report exists
+      stat:
+        path: /scripts/audits/weekly_report.txt
+      become: yes
+      register: parsing_log_present
+
+    # Run weekly audit script #working
+    - name: Run Weekly audit script
+      script: /scripts/SROandSRA_ThisWeek.sh
+      become: yes
+      when: not audit_file_present
+
+    # Run parsing log file script
+    - name: Run Parsing log file script
+      script: /scripts/parse-log-files.sh
+      become: yes
+      when: not parsing_log_present 
+    
+    # Generate Archive path variable
+    - name: Generate archive path variable
+      find: 
+        paths: "/scripts/audits/Archive/"
+        recurse: yes
+        patterns: "*.txt"
+      register: archive_files
+    
+    # Generate audit paths variable
+    - name: Generate archive path variable
+      find: 
+        paths: "/var/log/audit/"
+        recurse: yes
+        patterns: "*.txt"
+      register: audit_files  
+
+    # Collect log files
+    - name: Collect files back to host
+      fetch:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - "{{ files_to_collect }}"
+      become: yes 
+
+    # Collect the rest of the logs
+    - name: Collect the archive files
+      fetch:
+        src: "{{ item.path }}"
+        dest: /ansible-collection/Archive/
+        flat: yes
+      become: yes
+      no_log: yes
+      with_items:
+        - "{{ archive_files.files }}"
+        - "{{ audit_files.files }}"
