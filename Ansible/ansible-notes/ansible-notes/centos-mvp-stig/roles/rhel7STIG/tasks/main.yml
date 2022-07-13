@@ -1,0 +1,185 @@
+- name: populate package facts
+  package_facts:
+
+# R-204393 RHEL-07-010030
+- name: stigrule_204393__etc_dconf_db_local_d_01_banner_message
+  ini_file:
+    path: /etc/dconf/db/local.d/01-banner-message
+    section: org/gnome/login-screen
+    option: banner-message-enable
+    value: "{{ rhel7STIG_stigrule_204393__etc_dconf_db_local_d_01_banner_message_Value }}"
+    no_extra_spaces: yes
+  notify: dconf_update
+  when:
+    - rhel7STIG_stigrule_204393_Manage
+    - "'dconf' in packages"
+
+# R-204394 RHEL-07-010040
+- name: stigrule_204394__etc_dconf_db_local_d_01_banner_message
+  ini_file:
+    path: /etc/dconf/db/local.d/01-banner-message
+    section: org/gnome/login-screen
+    option: banner-message-text
+    value: "{{ rhel7STIG_stigrule_204394__etc_dconf_db_local_d_01_banner_message_Value }}"
+    no_extra_spaces: yes
+  notify: dconf_update
+  when:
+    - rhel7STIG_stigrule_204394_Manage
+    - "'dconf' in packages"
+
+# R-204395 RHEL-07-010050
+- name: stigrule_204395__etc_issue
+  copy:
+    dest: "{{ rhel7STIG_stigrule_204395__etc_issue_Dest }}"
+    content: "{{ rhel7STIG_stigrule_204395__etc_issue_Content }}"
+  when:
+    - rhel7STIG_stigrule_204395_Manage
+
+# R-204398 RHEL-07-010070
+- name: stigrule_204398__etc_dconf_db_local_d_00_screensaver
+  ini_file:
+    path: /etc/dconf/db/local.d/00-screensaver
+    section: org/gnome/desktop/session
+    option: idle-delay
+    value: "{{ rhel7STIG_stigrule_204398__etc_dconf_db_local_d_00_screensaver_Value }}"
+    no_extra_spaces: yes
+  notify: dconf_update
+  when:
+    - rhel7STIG_stigrule_204398_Manage
+    - "'dconf' in packages"
+
+# R-204399 RHEL-07-010081
+- name: stigrule_204399__etc_dconf_db_local_d_locks_session
+  lineinfile:
+    path: /etc/dconf/db/local.d/locks/session
+    line: "{{ rhel7STIG_stigrule_204399__etc_dconf_db_local_d_locks_session_Line }}"
+    create: yes
+  notify: dconf_update
+  when:
+    - rhel7STIG_stigrule_204399_Manage
+    - "'dconf' in packages"
+
+# R-204400 RHEL-07-010082
+- name: stigrule_204400__etc_dconf_db_local_d_locks_session
+  lineinfile:
+    path: /etc/dconf/db/local.d/locks/session
+    line: "{{ rhel7STIG_stigrule_204400__etc_dconf_db_local_d_locks_session_Line }}"
+    create: yes
+  notify: dconf_update
+  when:
+    - rhel7STIG_stigrule_204400_Manage
+    - "'dconf' in packages"
+
+# R-204402 RHEL-07-010100
+- name: stigrule_204402__etc_dconf_db_local_d_00_screensaver
+  ini_file:
+    path: /etc/dconf/db/local.d/00-screensaver
+    section: org/gnome/desktop/screensaver
+    option: idle-activation-enabled
+    value: "{{ rhel7STIG_stigrule_204402__etc_dconf_db_local_d_00_screensaver_Value }}"
+    no_extra_spaces: yes
+  notify: dconf_update
+  when:
+    - rhel7STIG_stigrule_204402_Manage
+    - "'dconf' in packages"
+
+# R-204403 RHEL-07-010101
+- name: stigrule_204403__etc_dconf_db_local_d_locks_session
+  lineinfile:
+    path: /etc/dconf/db/local.d/locks/session
+    line: "{{ rhel7STIG_stigrule_204403__etc_dconf_db_local_d_locks_session_Line }}"
+    create: yes
+  notify: dconf_update
+  when:
+    - rhel7STIG_stigrule_204403_Manage
+    - "'dconf' in packages"
+
+# R-204503 RHEL-07-030000
+- name: check if auditd.service is installed
+  shell: ! systemctl list-unit-files | grep "^auditd.service[ \t]\+"
+  changed_when: False
+  check_mode: no
+  register: result
+  failed_when: result.rc > 1
+- name: stigrule_204503_auditd_enable
+  service:
+    name: auditd.service
+    enabled: "{{ rhel7STIG_stigrule_204503_auditd_enable_Enabled }}"
+  when:
+    - rhel7STIG_stigrule_204503_Manage
+    - result.rc == 0
+
+# R-204503 RHEL-07-030000
+- name: check if auditd.service is installed
+  shell: ! systemctl list-unit-files | grep "^auditd.service[ \t]\+"
+  changed_when: False
+  check_mode: no
+  register: result
+  failed_when: result.rc > 1
+- name: stigrule_204503_auditd_start
+  service:
+    name: auditd.service
+    state: "{{ rhel7STIG_stigrule_204503_auditd_start_State }}"
+  when:
+    - rhel7STIG_stigrule_204503_Manage
+    - result.rc == 0
+
+# Set Audit Log file
+- name: Set audit log templates
+  template:
+    src: "{{ item.template }}"
+    dest: "{{ item.file }}"
+  with_items:
+    - "{{ REPLACEMENT_AUDIT_TEMPLATES }}"
+
+# Check if Banner is installed
+- name: Check if banner installed
+  stat: 
+    path: /usr/bin/classification-banner
+  register: banner_installed
+
+# Copy classification-banner-master folder
+- name: Copy classification-banner contents to /opt
+  copy:
+    src: classification-banner-master
+    dest: /opt/
+  when: banner_installed.stat.exists == false
+
+# Install Banner.py
+- name: Install Classification Banner colors
+  command: "python /opt/classification-banner-master/setup.py install"
+  become: true
+  args:
+    chdir: "/opt/classification-banner-master"
+    executable: /usr/bin/python
+  environment:
+    - PYTHONPATH: "/opt/classification-banner-master/"
+  when: banner_installed.stat.exists == false
+
+# Configure Banner Colors
+- name: Configure Classification Banner and colors
+  template:
+    src: "{{ item.template }}"
+    dest: "{{ item.file }}"
+  with_items:
+    - "{{ REPLACEMENT_BANNER_TEMPLATES }}"
+  become: true
+
+# # Update sudoers file with developer group
+# - name: Configure Workstation Admins to allow yum installs
+#   lineinfile:
+#     path: /etc/sudoers.d/sudoers
+#     regexp: '^%Workstation\ Admins ALL=(ALL) /bin/yum'
+#     line: '%Workstation\ Admins ALL=(ALL) /bin/yum'
+#     create: true
+#     state: present
+
+#Flush handlers for AD to work
+- name: Flush handlers before locking <shared-domain-account> account
+  meta: flush_handlers
+
+# Lock <shared-domain-account> account 
+- name: Restrict <shared-domain-account> account to sudo access only
+  user:
+    name: <shared-domain-account>
+    password_lock: yes

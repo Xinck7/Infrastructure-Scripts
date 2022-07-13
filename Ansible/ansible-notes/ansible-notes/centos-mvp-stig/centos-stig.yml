@@ -1,0 +1,8 @@
+- hosts: all
+  remote_user: <redacted>
+  become: yes
+  gather_facts: yes
+  roles:
+    - linux.ad.integration
+    - rhel7STIG
+

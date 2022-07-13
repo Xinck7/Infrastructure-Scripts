@@ -1,0 +1,51 @@
+# R-204393 RHEL-07-010030
+rhel7STIG_stigrule_204393_Manage: True
+rhel7STIG_stigrule_204393__etc_dconf_db_local_d_01_banner_message_Value: 'true'
+# R-204394 RHEL-07-010040
+rhel7STIG_stigrule_204394_Manage: True
+rhel7STIG_stigrule_204394__etc_dconf_db_local_d_01_banner_message_Value: '''You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.\nBy using this IS (which includes any device attached to this IS), you consent to the following conditions:\n-The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.\n-At any time, the USG may inspect and seize data stored on this IS.\n-Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.\n-This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.'''
+# R-204395 RHEL-07-010050
+rhel7STIG_stigrule_204395_Manage: True
+rhel7STIG_stigrule_204395__etc_issue_Dest: /etc/issue
+rhel7STIG_stigrule_204395__etc_issue_Content: 'You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.
+
+By using this IS (which includes any device attached to this IS), you consent to the following conditions:
+
+-The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.
+
+-At any time, the USG may inspect and seize data stored on this IS.
+
+-Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.
+
+-This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.
+
+-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.
+
+'
+# R-204398 RHEL-07-010070
+rhel7STIG_stigrule_204398_Manage: True
+rhel7STIG_stigrule_204398__etc_dconf_db_local_d_00_screensaver_Value: 'uint32 900'
+# R-204399 RHEL-07-010081
+rhel7STIG_stigrule_204399_Manage: True
+rhel7STIG_stigrule_204399__etc_dconf_db_local_d_locks_session_Line: '/org/gnome/desktop/screensaver/lock-delay'
+# R-204400 RHEL-07-010082
+rhel7STIG_stigrule_204400_Manage: True
+rhel7STIG_stigrule_204400__etc_dconf_db_local_d_locks_session_Line: '/org/gnome/desktop/session/idle-delay'
+# R-204402 RHEL-07-010100
+rhel7STIG_stigrule_204402_Manage: True
+rhel7STIG_stigrule_204402__etc_dconf_db_local_d_00_screensaver_Value: 'true'
+# R-204403 RHEL-07-010101
+rhel7STIG_stigrule_204403_Manage: True
+rhel7STIG_stigrule_204403__etc_dconf_db_local_d_locks_session_Line: '/org/gnome/desktop/screensaver/idle-activation-enabled'
+# R-204503 RHEL-07-030000
+rhel7STIG_stigrule_204503_Manage: True
+rhel7STIG_stigrule_204503_auditd_enable_Enabled: yes
+rhel7STIG_stigrule_204503_auditd_start_State: started
+
+REPLACEMENT_AUDIT_TEMPLATES:
+  - {template: audit.rules.j2, file: /etc/audit/rules.d/audit.rules}
+  - {template: auditd.conf.j2, file: /etc/audit/auditd.conf}
+
+REPLACEMENT_BANNER_TEMPLATES:
+- {template: classification-banner.j2, file: /etc/classification-banner}
+- {template: classification-banner.desktop.j2, file: /etc/xdg/autostart/classification-banner.desktop}
